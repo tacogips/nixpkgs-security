@@ -150,17 +150,10 @@ let
   useSharedZstd = lib.versionAtLeast version "22.15";
 
   sharedLibDeps = {
-    brotli = brotli.overrideAttrs (old: {
-      patches = old.patches ++ [
-        # Node.js uses shared Brotli, so every release line needs CVE-2026-111497 fixed here.
-        (fetchurl {
-          url = "https://github.com/google/brotli/commit/0ed4268a4401abcb4472096340477cf4af7d1a2b.patch?full_index=1";
-          hash = "sha256-1vliUJAAIj3vcGKVgim9CEV+XgMuftDR2U+3kLBUsfw=";
-        })
-      ];
-    });
+
 
     inherit
+      brotli
       libuv
       nghttp2
       nghttp3
