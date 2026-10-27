@@ -9,6 +9,7 @@
 
   # nativeBuildInputs
   installShellFiles,
+  makeBinaryWrapper,
 
   buildPackages,
   versionCheckHook,
@@ -18,23 +19,26 @@
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "uv";
-  version = "0.11.21";
+  version = "0.13.5";
   __structuredAttrs = true;
 
   src = fetchFromGitHub {
     owner = "astral-sh";
     repo = "uv";
     tag = finalAttrs.version;
-    hash = "sha256-2PhGJbgCSqOiDVv8ktVkAaADhPxvKp1/JqkNQspt2Pc=";
+    hash = "sha256-SXTusm2EJ49tk03c3vSHcZp3AtAuj9SGOzsMwpnjXDw=";
   };
 
-  cargoHash = "sha256-0hfLpfU2WaWFkqcSMJctLM5UDeTnIibuog/0U+DBzmI=";
+  cargoHash = "sha256-spQmSFAjNs6pWnw2nd/d3ZysIMK9j+BjDjrwcnUCmWw=";
 
   buildInputs = [
     rust-jemalloc-sys
   ];
 
-  nativeBuildInputs = [ installShellFiles ];
+  nativeBuildInputs = [
+    installShellFiles
+    makeBinaryWrapper
+  ];
 
   cargoBuildFlags = [
     "--package"
@@ -44,17 +48,22 @@ rustPlatform.buildRustPackage (finalAttrs: {
   # Tests require python3
   doCheck = false;
 
-  postInstall = lib.optionalString (stdenv.hostPlatform.emulatorAvailable buildPackages) (
-    let
-      emulator = stdenv.hostPlatform.emulator buildPackages;
-    in
-    ''
-      installShellCompletion --cmd uv \
-        --bash <(${emulator} $out/bin/uv generate-shell-completion bash) \
-        --fish <(${emulator} $out/bin/uv generate-shell-completion fish) \
-        --zsh <(${emulator} $out/bin/uv generate-shell-completion zsh)
-    ''
-  );
+  postInstall =
+    lib.optionalString (stdenv.hostPlatform.emulatorAvailable buildPackages) (
+      let
+        emulator = stdenv.hostPlatform.emulator buildPackages;
+      in
+      ''
+        installShellCompletion --cmd uv \
+          --bash <(${emulator} $out/bin/uv generate-shell-completion bash) \
+          --fish <(${emulator} $out/bin/uv generate-shell-completion fish) \
+          --zsh <(${emulator} $out/bin/uv generate-shell-completion zsh)
+      ''
+    )
+    # uvx runs the uv next to it, so the wrapper also covers uvx.
+    + ''
+      wrapProgram $out/bin/uv --set-default UV_SYSTEM_CERTS 1
+    '';
 
   nativeInstallCheckInputs = [ versionCheckHook ];
   doInstallCheck = true;
@@ -72,7 +81,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
       Due to `uv`'s (over)eager fetching of dynamically-linked Python executables,
       as well as vendoring of dynamically-linked libraries within Python modules distributed via PyPI,
       NixOS users can run into issues when managing Python projects.
-      See the Nixpkgs Reference Manual entry for `uv` for information on how to mitigate these issues:
+      See the Nixpkgs Manual entry for `uv` for information on how to mitigate these issues:
       https://nixos.org/manual/nixpkgs/unstable/#sec-uv.
 
       For building Python projects with `uv` and Nix outside of nixpkgs, check out `uv2nix` at https://github.com/pyproject-nix/uv2nix.
